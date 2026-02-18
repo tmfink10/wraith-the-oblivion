@@ -251,7 +251,7 @@ export function exportCharacterPdf(character: Character): void {
     y += LINE_HEIGHT;
     for (const thorn of character.shadow.thorns) {
       y = checkPageBreak(doc, y);
-      doc.text(`${thorn.name} (${thorn.pointCost} pt)`, MARGIN + 4, y);
+      doc.text(`${thorn.name} (${thorn.rating} pt)`, MARGIN + 4, y);
       y += LINE_HEIGHT;
     }
   }

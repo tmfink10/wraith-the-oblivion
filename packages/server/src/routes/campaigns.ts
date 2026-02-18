@@ -82,7 +82,8 @@ router.post('/', async (req, res) => {
     res.status(201).json({ id, name: data.name, storytellerId, description: data.description || '' });
   } catch (err) {
     console.error('Error creating campaign:', err);
-    res.status(500).json({ error: 'Failed to create campaign' });
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    res.status(500).json({ error: `Failed to create campaign: ${message}` });
   }
 });
 
@@ -161,7 +162,7 @@ router.post('/:id/invite', requireAuth, async (req, res) => {
     const rows = await db
       .select()
       .from(campaigns)
-      .where(eq(campaigns.id, req.params.id));
+      .where(eq(campaigns.id, req.params.id as string));
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Campaign not found' });
@@ -175,7 +176,7 @@ router.post('/:id/invite', requireAuth, async (req, res) => {
     await db
       .update(campaigns)
       .set({ inviteCode, updatedAt: new Date().toISOString() })
-      .where(eq(campaigns.id, req.params.id));
+      .where(eq(campaigns.id, req.params.id as string));
 
     res.json({ inviteCode });
   } catch (err) {
@@ -190,7 +191,7 @@ router.post('/join/:inviteCode', requireAuth, async (req, res) => {
     const rows = await db
       .select()
       .from(campaigns)
-      .where(eq(campaigns.inviteCode, req.params.inviteCode));
+      .where(eq(campaigns.inviteCode, req.params.inviteCode as string));
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Invalid invite code' });

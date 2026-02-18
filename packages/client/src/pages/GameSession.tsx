@@ -3,6 +3,7 @@ import { useSocket } from '../hooks/useSocket';
 import { useSessionSocket } from '../hooks/useSessionSocket';
 import { useSessionStore } from '../stores/sessionStore';
 import { useCharacterStore } from '../stores/characterStore';
+import { useAuth } from '../hooks/useAuth';
 import { ClientEvents } from '@wraith/shared';
 import type { JoinSessionResponse } from '@wraith/shared';
 import { ChatLog } from '../components/tabletop/ChatLog';
@@ -24,9 +25,15 @@ export function GameSession({ sessionId }: GameSessionProps) {
     setCurrentSession,
     leaveSession,
   } = useSessionStore();
-  const { characters } = useCharacterStore();
+  const { characters, loadCharacters } = useCharacterStore();
+  const { getAuthHeaders, isAuthenticated } = useAuth();
   const [error, setError] = useState('');
   const [joining, setJoining] = useState(true);
+
+  // Load characters from server so they're available for selection
+  useEffect(() => {
+    loadCharacters(getAuthHeaders());
+  }, [isAuthenticated]);
 
   // Wire all socket events
   useSessionSocket(sessionId);

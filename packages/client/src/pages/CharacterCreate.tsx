@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCharacterStore } from '../stores/characterStore';
+import { useAuth } from '../hooks/useAuth';
 import { AttributeBlock } from '../components/character/AttributeBlock';
 import { AbilityList } from '../components/character/AbilityList';
 import { BackgroundList } from '../components/character/BackgroundList';
@@ -57,7 +58,12 @@ export function CharacterCreate() {
     addThorn,
     removeThorn,
     finishCreation,
+    saveCharacterToServer,
   } = useCharacterStore();
+
+  const { getAuthHeaders } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!creationState) {
@@ -71,9 +77,16 @@ export function CharacterCreate() {
   const stepIndex = getStepIndex(step);
   const totalSteps = getTotalSteps();
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     const result = finishCreation();
     if (result) {
+      setSaving(true);
+      setSaveError(null);
+      const ok = await saveCharacterToServer(result, getAuthHeaders());
+      setSaving(false);
+      if (!ok) {
+        setSaveError('Character created locally but failed to save to server. Your data may be lost on refresh.');
+      }
       window.location.href = `/characters/${result.id}`;
     }
   };
@@ -171,11 +184,18 @@ export function CharacterCreate() {
         )}
       </div>
 
+      {/* Save Error */}
+      {saveError && (
+        <div className="mb-4 px-4 py-3 rounded bg-red-900/30 border border-red-800/50 text-red-300 text-sm">
+          {saveError}
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex justify-between border-t border-wraith-800 pt-4">
         <button
           onClick={prevStep}
-          disabled={stepIndex === 0}
+          disabled={stepIndex === 0 || saving}
           className="px-4 py-2 text-sm bg-wraith-800 hover:bg-wraith-700 text-gray-300 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           Previous
@@ -183,9 +203,10 @@ export function CharacterCreate() {
         {step === 'finishing' ? (
           <button
             onClick={handleFinish}
-            className="px-6 py-2 text-sm bg-wraith-500 hover:bg-wraith-400 text-white rounded font-medium transition-colors"
+            disabled={saving}
+            className="px-6 py-2 text-sm bg-wraith-500 hover:bg-wraith-400 text-white rounded font-medium transition-colors disabled:opacity-50"
           >
-            Create Character
+            {saving ? 'Saving…' : 'Create Character'}
           </button>
         ) : (
           <button

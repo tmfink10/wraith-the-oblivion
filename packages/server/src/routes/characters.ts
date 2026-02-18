@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db/index.js';
-import { characters } from '../db/schema.js';
+import { characters, campaignCharacters } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -134,6 +134,10 @@ router.delete('/:id', async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to delete this character' });
     }
 
+    // Remove from any campaigns first (foreign key constraint)
+    await db
+      .delete(campaignCharacters)
+      .where(eq(campaignCharacters.characterId, req.params.id));
     await db.delete(characters).where(eq(characters.id, req.params.id));
     res.json({ success: true, id: req.params.id });
   } catch (err) {

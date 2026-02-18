@@ -141,7 +141,6 @@ export function determineShadowInterjection(
       description: `The Shadow offers you ${diceOffered} bonus ${diceOffered === 1 ? 'die' : 'dice'}... but at what cost?`,
       diceOffer: {
         diceOffered,
-        accepted: false,
         shadowPointsGained: diceOffered, // 1:1 ratio per THD
       },
     };

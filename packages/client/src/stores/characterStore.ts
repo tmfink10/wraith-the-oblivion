@@ -28,16 +28,25 @@ interface CharacterStore {
   // Character list
   characters: Character[];
   selectedCharacterId: string | null;
+  isLoading: boolean;
+  error: string | null;
 
   // Creation wizard
   creationState: CharacterCreationState | null;
 
-  // Actions - Character List
+  // Actions - Character List (local)
   setCharacters: (characters: Character[]) => void;
   selectCharacter: (id: string | null) => void;
   addCharacter: (character: Character) => void;
   updateCharacter: (id: string, updates: Partial<Character>) => void;
   deleteCharacter: (id: string) => void;
+
+  // Actions - Server Sync
+  loadCharacters: (authHeaders: Record<string, string>) => Promise<void>;
+  loadCharacter: (id: string, authHeaders: Record<string, string>) => Promise<Character | null>;
+  saveCharacterToServer: (character: Character, authHeaders: Record<string, string>) => Promise<boolean>;
+  updateCharacterOnServer: (id: string, character: Character, authHeaders: Record<string, string>) => Promise<boolean>;
+  deleteCharacterFromServer: (id: string, authHeaders: Record<string, string>) => Promise<boolean>;
 
   // Actions - Creation Wizard
   startCreation: (template?: ExperienceTemplate) => void;
@@ -85,9 +94,11 @@ interface CharacterStore {
 export const useCharacterStore = create<CharacterStore>((set, get) => ({
   characters: [],
   selectedCharacterId: null,
+  isLoading: false,
+  error: null,
   creationState: null,
 
-  // ─── Character List ───────────────────────────────────────────
+  // ─── Character List (local) ─────────────────────────────────────
   setCharacters: (characters) => set({ characters }),
   selectCharacter: (id) => set({ selectedCharacterId: id }),
   addCharacter: (character) =>
@@ -103,6 +114,97 @@ export const useCharacterStore = create<CharacterStore>((set, get) => ({
       characters: state.characters.filter((c) => c.id !== id),
       selectedCharacterId: state.selectedCharacterId === id ? null : state.selectedCharacterId,
     })),
+
+  // ─── Server Sync ────────────────────────────────────────────────
+  loadCharacters: async (authHeaders) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await fetch('/api/characters', { headers: authHeaders });
+      if (res.ok) {
+        const data = await res.json();
+        set({ characters: data, isLoading: false });
+      } else {
+        set({ isLoading: false, error: 'Failed to load characters' });
+      }
+    } catch {
+      set({ isLoading: false, error: 'Network error loading characters' });
+    }
+  },
+
+  loadCharacter: async (id, authHeaders) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await fetch(`/api/characters/${id}`, { headers: authHeaders });
+      if (res.ok) {
+        const character = await res.json();
+        // Merge into local store (replace if exists, add if not)
+        set((state) => {
+          const exists = state.characters.some((c) => c.id === character.id);
+          return {
+            characters: exists
+              ? state.characters.map((c) => (c.id === character.id ? character : c))
+              : [...state.characters, character],
+            isLoading: false,
+          };
+        });
+        return character;
+      } else {
+        set({ isLoading: false });
+        return null;
+      }
+    } catch {
+      set({ isLoading: false });
+      return null;
+    }
+  },
+
+  saveCharacterToServer: async (character, authHeaders) => {
+    try {
+      const res = await fetch('/api/characters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify(character),
+      });
+      return res.ok;
+    } catch {
+      console.error('Failed to save character to server');
+      return false;
+    }
+  },
+
+  updateCharacterOnServer: async (id, character, authHeaders) => {
+    try {
+      const res = await fetch(`/api/characters/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify(character),
+      });
+      return res.ok;
+    } catch {
+      console.error('Failed to update character on server');
+      return false;
+    }
+  },
+
+  deleteCharacterFromServer: async (id, authHeaders) => {
+    try {
+      const res = await fetch(`/api/characters/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders,
+      });
+      if (res.ok) {
+        set((state) => ({
+          characters: state.characters.filter((c) => c.id !== id),
+          selectedCharacterId: state.selectedCharacterId === id ? null : state.selectedCharacterId,
+        }));
+        return true;
+      }
+      return false;
+    } catch {
+      console.error('Failed to delete character from server');
+      return false;
+    }
+  },
 
   // ─── Creation Wizard ──────────────────────────────────────────
   startCreation: (template = 'standard') =>

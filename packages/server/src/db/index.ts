@@ -45,6 +45,7 @@ sqlite.exec(`
     name TEXT NOT NULL,
     storyteller_id TEXT REFERENCES users(id),
     description TEXT NOT NULL DEFAULT '',
+    invite_code TEXT UNIQUE,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );

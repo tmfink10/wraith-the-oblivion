@@ -116,6 +116,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   getAuthHeaders: () => {
     const token = get().token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token ? { Authorization: `Bearer ${token}` } : {} as Record<string, string>;
   },
 }));

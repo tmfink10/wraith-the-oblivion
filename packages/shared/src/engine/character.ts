@@ -263,7 +263,7 @@ export function validateAbilityAllocation(
   for (const cat of categories) {
     const priority = priorities[cat];
     const allowed = getAbilityPoints(priority, template);
-    const spent = countAbilityDotsSpent(abilities[cat]);
+    const spent = countAbilityDotsSpent(abilities[cat] as unknown as Record<string, number>);
 
     if (spent > allowed) {
       errors.push(`${cat}: spent ${spent}/${allowed} dots (over by ${spent - allowed})`);

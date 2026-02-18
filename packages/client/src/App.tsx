@@ -3,6 +3,7 @@ import { Layout } from './components/ui/Layout';
 import { Home } from './pages/Home';
 import { CharacterCreate } from './pages/CharacterCreate';
 import { CharacterSheet } from './pages/CharacterSheet';
+import { CharacterList } from './pages/CharacterList';
 import { SoloPlay } from './pages/SoloPlay';
 import { Lobby } from './pages/Lobby';
 import { GameSession } from './pages/GameSession';
@@ -23,7 +24,7 @@ export function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/create" element={<CharacterCreate />} />
           <Route path="/characters/:id" element={<CharacterSheetRoute />} />
-          <Route path="/characters" element={<CharacterSheet />} />
+          <Route path="/characters" element={<CharacterList />} />
           <Route path="/solo" element={<SoloPlay />} />
           <Route path="/lobby" element={<Lobby />} />
           <Route path="/session/:id" element={<GameSessionRoute />} />

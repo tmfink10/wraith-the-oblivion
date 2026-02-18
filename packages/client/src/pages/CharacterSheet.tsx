@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useCharacterStore } from '../stores/characterStore';
+import { useAuth } from '../hooks/useAuth';
 import { AttributeBlock } from '../components/character/AttributeBlock';
 import { AbilityList } from '../components/character/AbilityList';
 import { BackgroundList } from '../components/character/BackgroundList';
@@ -15,15 +17,37 @@ interface CharacterSheetProps {
 }
 
 export function CharacterSheet({ characterId }: CharacterSheetProps) {
-  const { characters, selectedCharacterId } = useCharacterStore();
+  const { characters, selectedCharacterId, loadCharacter, deleteCharacterFromServer, isLoading } = useCharacterStore();
+  const { getAuthHeaders } = useAuth();
+  const [fetchAttempted, setFetchAttempted] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const id = characterId || selectedCharacterId;
   const character = characters.find((c) => c.id === id);
 
+  // Fetch character from server if not in local store
+  useEffect(() => {
+    if (id && !character && !fetchAttempted && !isLoading) {
+      setFetchAttempted(true);
+      loadCharacter(id, getAuthHeaders());
+    }
+  }, [id, character, fetchAttempted, isLoading]);
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-gray-400">Loading character...</p>
+      </div>
+    );
+  }
+
   if (!character) {
     return (
       <div className="text-center py-20">
-        <h2 className="text-xl text-gray-400">No character selected</h2>
+        <h2 className="text-xl text-gray-400">
+          {fetchAttempted ? 'Character not found' : 'No character selected'}
+        </h2>
         <a
           href="/create"
           className="mt-4 inline-block px-4 py-2 bg-wraith-700 hover:bg-wraith-600 text-gray-200 rounded transition-colors"
@@ -44,12 +68,47 @@ export function CharacterSheet({ characterId }: CharacterSheetProps) {
             <p className="text-gray-400 mt-1">{character.concept}</p>
           </div>
           <div className="text-right text-sm space-y-1 flex flex-col items-end gap-2">
-            <button
-              onClick={() => exportCharacterPdf(character as Character)}
-              className="px-3 py-1.5 bg-wraith-700 hover:bg-wraith-600 text-wraith-100 rounded text-xs transition-colors"
-            >
-              Export PDF
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => exportCharacterPdf(character as Character)}
+                className="px-3 py-1.5 bg-wraith-700 hover:bg-wraith-600 text-wraith-100 rounded text-xs transition-colors"
+              >
+                Export PDF
+              </button>
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-3 py-1.5 bg-wraith-800 hover:bg-red-900/60 text-gray-500 hover:text-red-400 border border-wraith-700 hover:border-red-800 rounded text-xs transition-colors"
+                >
+                  Delete
+                </button>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <span className="text-red-400 text-xs mr-1">Delete?</span>
+                  <button
+                    onClick={async () => {
+                      if (!id) return;
+                      setDeleting(true);
+                      const ok = await deleteCharacterFromServer(id, getAuthHeaders());
+                      setDeleting(false);
+                      if (ok) {
+                        window.location.href = '/characters';
+                      }
+                    }}
+                    disabled={deleting}
+                    className="px-2 py-1 bg-red-900/60 hover:bg-red-800 text-red-300 rounded text-xs transition-colors disabled:opacity-50"
+                  >
+                    {deleting ? '...' : 'Yes'}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-2 py-1 bg-wraith-800 hover:bg-wraith-700 text-gray-400 rounded text-xs transition-colors"
+                  >
+                    No
+                  </button>
+                </div>
+              )}
+            </div>
             <div>
               <span className="text-gray-500">Player:</span>{' '}
               <span className="text-gray-300">{character.player}</span>
@@ -87,19 +146,19 @@ export function CharacterSheet({ characterId }: CharacterSheetProps) {
           <AttributeBlock
             category="physical"
             categoryLabel="Physical"
-            attributes={character.attributes.physical}
+            attributes={character.attributes.physical as unknown as Record<string, number>}
             readonly
           />
           <AttributeBlock
             category="social"
             categoryLabel="Social"
-            attributes={character.attributes.social}
+            attributes={character.attributes.social as unknown as Record<string, number>}
             readonly
           />
           <AttributeBlock
             category="mental"
             categoryLabel="Mental"
-            attributes={character.attributes.mental}
+            attributes={character.attributes.mental as unknown as Record<string, number>}
             readonly
           />
         </div>
@@ -109,19 +168,19 @@ export function CharacterSheet({ characterId }: CharacterSheetProps) {
           <AbilityList
             category="talents"
             categoryLabel="Talents"
-            abilities={character.abilities.talents}
+            abilities={character.abilities.talents as unknown as Record<string, number>}
             readonly
           />
           <AbilityList
             category="skills"
             categoryLabel="Skills"
-            abilities={character.abilities.skills}
+            abilities={character.abilities.skills as unknown as Record<string, number>}
             readonly
           />
           <AbilityList
             category="knowledges"
             categoryLabel="Knowledges"
-            abilities={character.abilities.knowledges}
+            abilities={character.abilities.knowledges as unknown as Record<string, number>}
             readonly
           />
         </div>

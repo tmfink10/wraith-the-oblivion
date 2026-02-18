@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCharacterStore } from '../stores/characterStore';
+import { useAuth } from '../hooks/useAuth';
 import { useSoloStore } from '../stores/soloStore';
 import { ScenePanel } from '../components/solo/ScenePanel';
 import { OraclePanel } from '../components/solo/OraclePanel';
@@ -7,7 +8,13 @@ import { ShadowVoice } from '../components/solo/ShadowVoice';
 import { RandomSceneAlert } from '../components/solo/RandomSceneAlert';
 
 export function SoloPlay() {
-  const { characters } = useCharacterStore();
+  const { characters, loadCharacters, isLoading } = useCharacterStore();
+  const { getAuthHeaders, isAuthenticated } = useAuth();
+
+  // Load characters from server on mount
+  useEffect(() => {
+    loadCharacters(getAuthHeaders());
+  }, [isAuthenticated]);
   const {
     phase,
     session,
@@ -48,7 +55,11 @@ export function SoloPlay() {
           </p>
         </div>
 
-        {characters.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-12 bg-wraith-900/30 border border-wraith-800 rounded-lg">
+            <p className="text-gray-500">Loading characters...</p>
+          </div>
+        ) : characters.length === 0 ? (
           <div className="text-center py-12 bg-wraith-900/30 border border-wraith-800 rounded-lg">
             <p className="text-gray-500 mb-3">No characters available.</p>
             <a

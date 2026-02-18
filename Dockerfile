@@ -53,6 +53,9 @@ ENV NODE_ENV=production
 ENV PORT=8080
 ENV DATABASE_PATH=/app/data/wraith.db
 
+# Persist SQLite database across container restarts
+VOLUME /app/data
+
 EXPOSE 8080
 
 CMD ["node", "packages/server/dist/index.js"]

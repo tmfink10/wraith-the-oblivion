@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useAuthStore } from '../stores/authStore';
 import { CampaignCard } from '../components/campaign/CampaignCard';
 
 interface CampaignRow {
@@ -13,7 +14,8 @@ interface CampaignRow {
 }
 
 export function Campaigns() {
-  const { isAuthenticated, getAuthHeaders, user } = useAuth();
+  const { isAuthenticated, getAuthHeaders, user, isLoading: authLoading } = useAuth();
+  const authIsLoading = useAuthStore((s) => s.isLoading);
   const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,13 +47,16 @@ export function Campaigns() {
   };
 
   useEffect(() => {
-    fetchCampaigns();
-  }, [isAuthenticated]);
+    if (!authIsLoading) {
+      fetchCampaigns();
+    }
+  }, [isAuthenticated, authIsLoading]);
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
     setCreating(true);
+    setError(null);
     try {
       const res = await fetch('/api/campaigns', {
         method: 'POST',
@@ -63,9 +68,12 @@ export function Campaigns() {
         setNewDesc('');
         setShowCreate(false);
         fetchCampaigns();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `Failed to create campaign (${res.status})`);
       }
     } catch {
-      setError('Failed to create campaign');
+      setError('Failed to create campaign — network error');
     } finally {
       setCreating(false);
     }
@@ -92,6 +100,15 @@ export function Campaigns() {
       setJoinError('Failed to join campaign');
     }
   };
+
+  // Wait for auth to finish loading before showing "sign in" screen
+  if (authIsLoading) {
+    return (
+      <div className="max-w-2xl mx-auto mt-12 text-center">
+        <p className="text-gray-400">Loading…</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
