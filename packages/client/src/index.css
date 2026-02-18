@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-wraith-950 text-gray-100 font-gothic;
+  }
+
+  /* Custom scrollbar — gothic dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-wraith-950;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-wraith-700 rounded;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-wraith-600;
+  }
+}
+
+@layer components {
+  .card-gothic {
+    @apply p-4 rounded-lg border border-wraith-800 bg-wraith-900/50;
+  }
+
+  .section-header {
+    @apply text-xl font-serif text-wraith-300 mb-3 border-b border-wraith-800 pb-2;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-wraith-700 hover:bg-wraith-600 text-wraith-100 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-wraith-800 hover:bg-wraith-700 text-gray-300 rounded text-sm transition-colors border border-wraith-700;
+  }
+}
